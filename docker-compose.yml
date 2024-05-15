@@ -1,0 +1,163 @@
+version: "3"
+
+services:
+  kafdrop:
+    image: obsidiandynamics/kafdrop
+    restart: "no"
+    ports:
+      - "9000:9000"
+    environment:
+      KAFKA_BROKERCONNECT: "kafka1:19091,kafka2:29092,kafka3:39093"
+    depends_on:
+      - kafka1
+      - kafka2
+      - kafka3
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.3.2
+    hostname: zookeeper
+    ports:
+      - "2181:2181"
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_SERVER_ID: 1
+      ZOOKEEPER_SERVERS: zookeeper:2888:3888;zookeeper1:2888:3888;zookeeper2:2888:3888
+    volumes:
+      - ./data/zookeeper/data:/data
+      - ./data/zookeeper/datalog:/datalog
+  zookeeper1:
+    image: confluentinc/cp-zookeeper:7.3.2
+    hostname: zookeeper1
+    ports:
+      - "2182:2182"
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2182
+      ZOOKEEPER_SERVER_ID: 2
+      ZOOKEEPER_SERVERS: zookeeper:2888:3888;zookeeper1:2888:3888;zookeeper2:2888:3888
+    volumes:
+      - ./data/zookeeper1/data:/data
+      - ./data/zookeeper1/datalog:/datalog
+  zookeeper2:
+    image: confluentinc/cp-zookeeper:7.3.2
+    hostname: zookeeper2
+    ports:
+      - "2183:2183"
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2183
+      ZOOKEEPER_SERVER_ID: 3
+      ZOOKEEPER_SERVERS: zookeeper:2888:3888;zookeeper1:2888:3888;zookeeper2:2888:3888
+    volumes:
+      - ./data/zookeeper2/data:/data
+      - ./data/zookeeper2/datalog:/datalog
+  kafka1:
+    image: confluentinc/cp-kafka:5.3.0
+    hostname: kafka1
+    restart: always
+    container_name: kafka-broker-1
+    ports:
+      - "9091:9091"
+    environment:
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181,zookeeper1:2182,zookeeper2:2183
+      # KAFKA_ZOOKEEPER_CONNECT: "zookeeper:2181"
+      KAFKA_BROKER_ID: 1
+      # KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_LISTENERS: LISTENER_DOCKER_INTERNAL://kafka1:19091,LISTENER_DOCKER_EXTERNAL://kafka1:9091
+      KAFKA_ADVERTISED_LISTENERS: LISTENER_DOCKER_INTERNAL://kafka1:19091,LISTENER_DOCKER_EXTERNAL://${DOCKER_HOST_IP:-127.0.0.1}:9091
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: LISTENER_DOCKER_INTERNAL:PLAINTEXT,LISTENER_DOCKER_EXTERNAL:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: LISTENER_DOCKER_INTERNAL
+      KAFKA_CONFLUENT_SUPPORT_METRICS_ENABLE: false
+    volumes:
+      - ./data/kafka1/data:/var/lib/kafka/data
+    depends_on:
+      - zookeeper
+      - zookeeper1
+      - zookeeper2
+  kafka2:
+    image: confluentinc/cp-kafka:5.3.0
+    hostname: kafka2
+    restart: always
+    container_name: kafka-broker-2
+    ports:
+      - "9092:9092"
+    environment:
+      # KAFKA_ZOOKEEPER_CONNECT: "zookeeper:2181"
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181,zookeeper1:2182,zookeeper2:2183
+      KAFKA_BROKER_ID: 2
+      KAFKA_LISTENERS: LISTENER_DOCKER_INTERNAL://kafka2:29092,LISTENER_DOCKER_EXTERNAL://kafka2:9092
+      # KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_ADVERTISED_LISTENERS: LISTENER_DOCKER_INTERNAL://kafka2:29092,LISTENER_DOCKER_EXTERNAL://${DOCKER_HOST_IP:-127.0.0.1}:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: LISTENER_DOCKER_INTERNAL:PLAINTEXT,LISTENER_DOCKER_EXTERNAL:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: LISTENER_DOCKER_INTERNAL
+      KAFKA_CONFLUENT_SUPPORT_METRICS_ENABLE: false
+    volumes:
+      - ./data/kafka2/data:/var/lib/kafka/data
+    depends_on:
+      - zookeeper
+      - zookeeper1
+      - zookeeper2
+  kafka3:
+    image: confluentinc/cp-kafka:5.3.0
+    hostname: kafka3
+    restart: always
+    container_name: kafka-broker-3
+    ports:
+      - "9093:9093"
+    environment:
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181,zookeeper1:2182,zookeeper2:2183
+      # KAFKA_ZOOKEEPER_CONNECT: "zookeeper:2181"
+      KAFKA_BROKER_ID: 3
+      # KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_LISTENERS: LISTENER_DOCKER_INTERNAL://kafka3:39093,LISTENER_DOCKER_EXTERNAL://kafka3:9093
+      KAFKA_ADVERTISED_LISTENERS: LISTENER_DOCKER_INTERNAL://kafka3:39093,LISTENER_DOCKER_EXTERNAL://${DOCKER_HOST_IP:-127.0.0.1}:9093
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: LISTENER_DOCKER_INTERNAL:PLAINTEXT,LISTENER_DOCKER_EXTERNAL:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: LISTENER_DOCKER_INTERNAL
+      KAFKA_CONFLUENT_SUPPORT_METRICS_ENABLE: false
+    volumes:
+      - ./data/kafka3/data:/var/lib/kafka/data
+    depends_on:
+      - zookeeper
+      - zookeeper1
+      - zookeeper2
+  mysqldb1:
+    container_name: mysqldb1
+    image: mysql
+    # restart: always
+    ports:
+      - 3307:3306
+    environment:
+      MYSQL_DATABASE: kafka_producer
+      MYSQL_USER: datbttb
+      MYSQL_ROOT_PASSWORD: datbttb
+      MYSQL_PASSWORD: datbttb
+  mysqldb2:
+    container_name: mysqldb2
+    image: mysql
+    restart: always
+    ports:
+      - 3308:3307
+    environment:
+      MYSQL_DATABASE: kafka_consumer
+      MYSQL_USER: datttg
+      MYSQL_ROOT_PASSWORD: datttg
+      MYSQL_PASSWORD: datttg
+      MYSQL_TCP_PORT: 3307
+  producer:
+    build: ./Producer
+    ports:
+      - "8081:8081"
+    depends_on:
+      - mysqldb2
+      - mysqldb1
+      - kafka1
+      - kafka2
+      - kafka3
+  consumer:
+    build: ./Consumer
+    ports:
+      - "8082:8082"
+    depends_on:
+      - mysqldb1
+      - mysqldb2
+      - kafka1
+      - kafka2
+      - kafka3
+      - producer
